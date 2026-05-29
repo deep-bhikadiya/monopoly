@@ -797,7 +797,7 @@ function Game() {
 			return false;
 		}
 
-		if (showAlerts && !confirm(initiator.name + ", are you sure you want to make this exchange with " + recipient.name + "?")) {
+		if (showAlerts && !shouldAutoConfirmForRemoteAction() && !confirm(initiator.name + ", are you sure you want to make this exchange with " + recipient.name + "?")) {
 			return false;
 		}
 
@@ -908,7 +908,7 @@ function Game() {
 			return false;
 		}
 
-		if (initiator.human && !confirm(initiator.name + ", are you sure you want to make this offer to " + recipient.name + "?")) {
+		if (initiator.human && !shouldAutoConfirmForRemoteAction() && !confirm(initiator.name + ", are you sure you want to make this offer to " + recipient.name + "?")) {
 			return false;
 		}
 
@@ -2702,6 +2702,50 @@ function menuitem_onmouseout(element) {
 	return;
 }
 
+function shouldAutoConfirmForRemoteAction() {
+	return !!window.__monopolyRemoteActionInProgress;
+}
+
+function getBoardCellIcon(index, sq) {
+	if (index === 0) {
+		return '<img src="images/arrow_icon.png" alt="" />';
+	}
+
+	if (index === 2 || index === 17 || index === 33) {
+		return '<img src="images/community_chest_icon.png" alt="" />';
+	}
+
+	if (index === 7 || index === 22 || index === 36) {
+		return '<img src="images/chance_icon.png" alt="" />';
+	}
+
+	if (index === 4 || index === 38) {
+		return '<img src="images/tax_icon.png" alt="" />';
+	}
+
+	if (index === 20) {
+		return '<img src="images/free_parking_icon.png" alt="" />';
+	}
+
+	if (index === 30 || index === 10) {
+		return '<img src="images/jake_icon.png" alt="" />';
+	}
+
+	if (sq.groupNumber === 1) {
+		return '<img src="images/train_icon.png" alt="" />';
+	}
+
+	if (index === 12) {
+		return '<img src="images/electric_icon.png" alt="" />';
+	}
+
+	if (index === 28) {
+		return '<img src="images/water_icon.png" alt="" />';
+	}
+
+	return "";
+}
+
 window.onload = function() {
 	game = new Game();
 
@@ -2780,6 +2824,8 @@ window.onload = function() {
 	var currentCellAnchor;
 	var currentCellPositionHolder;
 	var currentCellName;
+	var currentCellColor;
+	var currentCellIcon;
 	var currentCellOwner;
 
 	for (var i = 0; i < 40; i++) {
@@ -2795,6 +2841,16 @@ window.onload = function() {
 		currentCellPositionHolder.id = "cell" + i + "positionholder";
 		currentCellPositionHolder.className = "cell-position-holder";
 		currentCellPositionHolder.enlargeId = "enlarge" + i;
+
+		currentCellColor = currentCellAnchor.appendChild(document.createElement("div"));
+		currentCellColor.id = "cell" + i + "color";
+		currentCellColor.className = "cell-color-band";
+		currentCellColor.style.backgroundColor = s.groupNumber ? s.color : "transparent";
+
+		currentCellIcon = currentCellAnchor.appendChild(document.createElement("div"));
+		currentCellIcon.id = "cell" + i + "icon";
+		currentCellIcon.className = "cell-icon";
+		currentCellIcon.innerHTML = getBoardCellIcon(i, s);
 
 		currentCellName = currentCellAnchor.appendChild(document.createElement("div"));
 		currentCellName.id = "cell" + i + "name";
