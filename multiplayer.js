@@ -77,6 +77,7 @@
 		if (meta) {
 			meta.textContent = detail || "";
 		}
+		updateBoardHud();
 	}
 
 	function seatLabel(seat) {
@@ -161,14 +162,33 @@
 		var boardStage = document.createElement("div");
 		boardStage.id = "board-stage";
 		boardStage.innerHTML = "" +
+			"<div id='board-hud'>" +
+			"<div class='board-chip'><span class='chip-label'>Mode</span><strong id='hud-mode'>Lobby</strong></div>" +
+			"<div class='board-chip'><span class='chip-label'>Room</span><strong id='hud-room-code'>Local</strong></div>" +
+			"<div class='board-chip'><span class='chip-label'>Seat</span><strong id='hud-seat'>Seat 1</strong></div>" +
+			"<div class='board-chip highlight-chip'><span class='chip-label'>Turn</span><strong id='hud-turn'>Waiting</strong></div>" +
+			"</div>" +
 			"<div id='board-centerpiece'>" +
 			"<div class='centerpiece-badge'>Live Table</div>" +
 			"<div class='centerpiece-title'>Build. Trade. Bankrupt the board.</div>" +
 			"<div class='centerpiece-subtitle'>Multiplayer rooms, private invites, and the full classic economy.</div>" +
-			"</div>";
+			"</div>" +
+			"<div id='board-frame'></div>";
 
 		var sidebarStage = document.createElement("div");
 		sidebarStage.id = "sidebar-stage";
+		sidebarStage.innerHTML = "" +
+			"<section id='sidebar-summary' class='sidebar-card'>" +
+			"<div class='sidebar-card-label'>Table pulse</div>" +
+			"<div class='sidebar-summary-grid'>" +
+			"<div class='summary-item'><span>Room</span><strong id='sidebar-room-code'>Local</strong></div>" +
+			"<div class='summary-item'><span>Your seat</span><strong id='sidebar-seat'>Seat 1</strong></div>" +
+			"<div class='summary-item wide'><span>Status</span><strong id='sidebar-status'>Waiting in lobby</strong></div>" +
+			"</div>" +
+			"</section>" +
+			"<section id='sidebar-money-panel' class='sidebar-card'><div class='sidebar-card-label'>Players</div></section>" +
+			"<section id='sidebar-control-panel' class='sidebar-card'><div class='sidebar-card-label'>Actions</div></section>" +
+			"<section id='sidebar-trade-panel' class='sidebar-card'><div class='sidebar-card-label'>Trade desk</div></section>";
 
 		main.appendChild(lobby);
 		main.appendChild(gameShell);
@@ -187,16 +207,65 @@
 			setupMounted = true;
 		}
 
-		boardStage.appendChild(byId("board"));
-		sidebarStage.appendChild(byId("moneybarwrap"));
-		sidebarStage.appendChild(byId("control"));
-		sidebarStage.appendChild(byId("trade"));
+		byId("board-frame").appendChild(byId("board"));
+		byId("sidebar-money-panel").appendChild(byId("moneybarwrap"));
+		byId("sidebar-control-panel").appendChild(byId("control"));
+		byId("sidebar-trade-panel").appendChild(byId("trade"));
 
 		byId("refresh").classList.add("floating-note");
 		byId("noscript").classList.add("floating-note");
 		byId("share-strip").classList.add("hidden");
 		gameShell.style.display = "none";
 		refreshJoinSeatOptions();
+		updateBoardHud();
+	}
+
+	function updateBoardHud() {
+		var modeEl = byId("hud-mode");
+		var roomEl = byId("hud-room-code");
+		var seatEl = byId("hud-seat");
+		var turnEl = byId("hud-turn");
+		var sideRoomEl = byId("sidebar-room-code");
+		var sideSeatEl = byId("sidebar-seat");
+		var sideStatusEl = byId("sidebar-status");
+		var roomText = multiplayer.roomCode || "Local";
+		var seatText = seatLabel(multiplayer.localSeat || 1);
+		var modeText = multiplayer.started ? "In game" : multiplayer.mode === "host" ? "Hosting" : multiplayer.mode === "client" ? "Joined" : multiplayer.mode === "local" ? "Hotseat" : "Lobby";
+		var turnText = "Waiting";
+		var sideStatusText = "Waiting in lobby";
+
+		if (multiplayer.started && typeof turn !== "undefined" && typeof player !== "undefined" && player[turn]) {
+			turnText = player[turn].name ? player[turn].name + " to play" : seatLabel(turn) + " to play";
+			sideStatusText = turnText;
+		} else if (multiplayer.mode === "host") {
+			sideStatusText = "Invite players and start when the table is ready";
+		} else if (multiplayer.mode === "client") {
+			sideStatusText = "Seat locked in. Waiting for the host";
+		} else if (multiplayer.mode === "local") {
+			sideStatusText = "Hotseat match ready on this device";
+		}
+
+		if (modeEl) {
+			modeEl.textContent = modeText;
+		}
+		if (roomEl) {
+			roomEl.textContent = roomText;
+		}
+		if (seatEl) {
+			seatEl.textContent = seatText;
+		}
+		if (turnEl) {
+			turnEl.textContent = turnText;
+		}
+		if (sideRoomEl) {
+			sideRoomEl.textContent = roomText;
+		}
+		if (sideSeatEl) {
+			sideSeatEl.textContent = seatText;
+		}
+		if (sideStatusEl) {
+			sideStatusEl.textContent = sideStatusText;
+		}
 	}
 
 	function refreshJoinSeatOptions() {
@@ -641,12 +710,14 @@
 			byId("room-code-display").textContent = snapshot.roomCode;
 		}
 		setLobbyEnabled(false);
+		updateBoardHud();
 	}
 
 	function hideLobbyShowGame() {
 		byId("table-hero").style.display = "none";
 		byId("lobby-screen").style.display = "none";
 		byId("game-shell").style.display = "grid";
+		updateBoardHud();
 	}
 
 	function resetBoardState() {
@@ -745,6 +816,7 @@
 		customSetup();
 		scheduleBroadcast();
 		setStatus("Game in progress", "Share decisions from your seat. The host keeps the room authoritative.");
+		updateBoardHud();
 	}
 
 	function patchGameHooks() {
@@ -945,6 +1017,7 @@
 		applyGameState(snapshot.state);
 		renderBoardState();
 		setStatus("Room live: " + snapshot.roomCode, "You are " + seatLabel(multiplayer.localSeat) + ". Controls unlock during your turn.");
+		updateBoardHud();
 	}
 
 	function applyGameState(state) {
@@ -1050,6 +1123,7 @@
 			}
 		}
 		renderRemoteDice();
+		updateBoardHud();
 	}
 
 	function tokenMarkup(playerState, left, top) {
